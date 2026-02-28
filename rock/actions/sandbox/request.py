@@ -25,6 +25,19 @@ class CreateBashSessionRequest(BaseModel):
     env: dict[str, str] | None = Field(default=None)
     remote_user: str | None = Field(default=None)
 
+    # Terminal settings
+    term: str = Field(default="dumb")
+    """Terminal type (TERM environment variable)."""
+
+    columns: int = Field(default=80, ge=1)
+    """Terminal width in columns. Must be positive."""
+
+    lines: int = Field(default=24, ge=1)
+    """Terminal height in lines. Must be positive."""
+
+    lang: str = Field(default="en_US.UTF-8")
+    """Language and encoding (LANG environment variable)."""
+
 
 CreateSessionRequest = Annotated[CreateBashSessionRequest, Field(discriminator="session_type")]
 """Union type for all create session requests. Do not use this directly."""
