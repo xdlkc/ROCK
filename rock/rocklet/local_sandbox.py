@@ -106,8 +106,7 @@ def _split_bash_command(inpt: str) -> list[str]:
 
 def _strip_control_chars(s: str) -> str:
     ansi_escape = re.compile(r"\x1B[@-_][0-?]*[ -/]*[@-~]")
-    # Also strip \r characters that may be added by terminal settings
-    return ansi_escape.sub("", s).replace("\r", "")
+    return ansi_escape.sub("", s)
 
 
 def _check_bash_command(command: str) -> None:
@@ -179,11 +178,11 @@ class BashSession(Session):
             env = {}
         env.update({"PS1": self._ps1, "PS2": "", "PS0": ""})
 
-        # Set terminal environment variables
-        env["TERM"] = self.request.term
-        env["COLUMNS"] = str(self.request.columns)
-        env["LINES"] = str(self.request.lines)
-        env["LANG"] = self.request.lang
+        # Set terminal environment variables only if specified
+        if self.request.term is not None:
+            env["TERM"] = self.request.term
+        if self.request.lang is not None:
+            env["LANG"] = self.request.lang
 
         if self.request.env is not None:
             env.update(self.request.env)

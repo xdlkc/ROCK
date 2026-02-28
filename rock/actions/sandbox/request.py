@@ -26,8 +26,8 @@ class CreateBashSessionRequest(BaseModel):
     remote_user: str | None = Field(default=None)
 
     # Terminal settings
-    term: str = Field(default="dumb")
-    """Terminal type (TERM environment variable)."""
+    term: str | None = Field(default=None)
+    """Terminal type (TERM environment variable). If None, TERM is not set."""
 
     columns: int = Field(default=80, ge=1)
     """Terminal width in columns. Must be positive."""
@@ -35,8 +35,8 @@ class CreateBashSessionRequest(BaseModel):
     lines: int = Field(default=24, ge=1)
     """Terminal height in lines. Must be positive."""
 
-    lang: str = Field(default="en_US.UTF-8")
-    """Language and encoding (LANG environment variable)."""
+    lang: str | None = Field(default=None)
+    """Language and encoding (LANG environment variable). If None, LANG is not set."""
 
 
 CreateSessionRequest = Annotated[CreateBashSessionRequest, Field(discriminator="session_type")]
