@@ -87,10 +87,16 @@ model-service = [
 ]
 
 
+egress = [
+    "mitmproxy>=10.0.0",
+    "cachetools>=5.0.0",
+]
+
 all = [
     "rl-rock[admin]",
     "rl-rock[rocklet]",
     "rl-rock[builder]",
+    "rl-rock[egress]",
 ]
 
 [project.scripts]
@@ -98,6 +104,7 @@ rocklet = "rock.rocklet.server:main"
 admin = "rock.admin.main:main"
 envhub = "rock.envhub.server:main"
 rock = "rock.cli.main:main"
+egress = "rock.egress.server:main"
 
 [dependency-groups]
 test = [

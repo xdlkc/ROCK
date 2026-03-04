@@ -156,6 +156,86 @@ class RuntimeConfig:
 
 
 @dataclass
+class EgressPolicyRule:
+    """单条审计模式规则，支持按各维度匹配。"""
+
+    sandbox_id: str = ""
+    user_id: str = ""
+    experiment_id: str = ""
+    namespace: str = ""
+    route_prefix: str = ""
+    mode: str = "metadata-only"  # off | metadata-only | full-capture
+
+
+@dataclass
+class EgressModeConfig:
+    default: str = "metadata-only"  # off | metadata-only | full-capture
+    rules: list = field(default_factory=list)  # list[EgressPolicyRule]
+
+    def __post_init__(self) -> None:
+        if self.rules and isinstance(self.rules[0], dict):
+            self.rules = [EgressPolicyRule(**r) for r in self.rules]
+
+
+@dataclass
+class EgressCaptureConfig:
+    max_body_bytes: int = 65536
+    max_chunk_capture: int = 0  # 0 = 不限 chunk 数，仅受 max_body_bytes 约束
+    redact_fields: list = field(default_factory=lambda: [
+        "authorization", "x-api-key", "apiKey", "token", "cookie", "set-cookie"
+    ])
+    redact_field_policy: dict = field(default_factory=dict)  # {"field": "drop|mask|encrypt"}
+
+
+@dataclass
+class EgressAccessPolicy:
+    default_action: str = "allow"  # allow | deny
+    allow_hosts: list = field(default_factory=list)  # ["host:port"]
+    deny_hosts: list = field(default_factory=list)
+
+
+@dataclass
+class EgressRetentionConfig:
+    metadata_days: int = 30
+    payload_days: int = 7
+
+
+@dataclass
+class EgressTLSConfig:
+    enabled: bool = True
+    ca_cert_path: str = "/etc/rock/egress/ca.crt"
+    ca_key_path: str = "/etc/rock/egress/ca.key"
+
+
+@dataclass
+class EgressGatewayConfig:
+    enabled: bool = False
+    listen_port: int = 18080
+    mode: EgressModeConfig = field(default_factory=EgressModeConfig)
+    policy: EgressAccessPolicy = field(default_factory=EgressAccessPolicy)
+    capture: EgressCaptureConfig = field(default_factory=EgressCaptureConfig)
+    tls: EgressTLSConfig = field(default_factory=EgressTLSConfig)
+    retention: EgressRetentionConfig = field(default_factory=EgressRetentionConfig)
+    audit_log_dir: str = "/var/log/rock/egress"
+    max_streaming_connections: int = 1000
+    max_connection_duration_seconds: int = 7200
+    idle_timeout_seconds: int = 300
+    policy_reload_interval_seconds: int = 10
+
+    def __post_init__(self) -> None:
+        if isinstance(self.mode, dict):
+            self.mode = EgressModeConfig(**self.mode)
+        if isinstance(self.policy, dict):
+            self.policy = EgressAccessPolicy(**self.policy)
+        if isinstance(self.capture, dict):
+            self.capture = EgressCaptureConfig(**self.capture)
+        if isinstance(self.tls, dict):
+            self.tls = EgressTLSConfig(**self.tls)
+        if isinstance(self.retention, dict):
+            self.retention = EgressRetentionConfig(**self.retention)
+
+
+@dataclass
 class RockConfig:
     ray: RayConfig = field(default_factory=RayConfig)
     k8s: K8sConfig = field(default_factory=K8sConfig)
@@ -167,6 +247,7 @@ class RockConfig:
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)
     proxy_service: ProxyServiceConfig = field(default_factory=ProxyServiceConfig)
     scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
+    egress_gateway: EgressGatewayConfig = field(default_factory=EgressGatewayConfig)
     nacos_provider: NacosConfigProvider | None = None
 
     @classmethod
@@ -208,6 +289,8 @@ class RockConfig:
             kwargs["proxy_service"] = ProxyServiceConfig(**config["proxy_service"])
         if "scheduler" in config:
             kwargs["scheduler"] = SchedulerConfig(**config["scheduler"])
+        if "egress_gateway" in config:
+            kwargs["egress_gateway"] = EgressGatewayConfig(**config["egress_gateway"])
 
         return cls(**kwargs)
 
