@@ -47,7 +47,7 @@ WS ws://admin-host/sandboxes/my-sandbox/proxy/ws
 
 ---
 
-## 2. HTTP Proxy（支持所有 Method）
+## 2. HTTP Proxy（支持所有 Method + 自定义端口）
 
 ### Endpoint
 
@@ -60,7 +60,8 @@ ANY /sandboxes/{sandbox_id}/proxy/{path:path}
 
 ### 变更
 
-原 `POST only` → 支持所有 HTTP method，透传原始 method 给沙箱内服务
+- 原 `POST only` → 支持所有 HTTP method，透传原始 method 给沙箱内服务
+- 新增 `port` query 参数，支持指定沙箱内任意 HTTP 服务端口
 
 ### Request
 
@@ -68,6 +69,7 @@ ANY /sandboxes/{sandbox_id}/proxy/{path:path}
 |------|------|------|------|
 | `sandbox_id` | path | ✅ | sandbox_id |
 | `path` | path | ❌ | 转发路径 |
+| `port` | query | ❌ | 目标 HTTP 端口，默认 8080（Port.SERVER）|
 | `body` | body | ❌ | 请求体（GET/DELETE 时可为空）|
 | Headers | - | - | 透传，排除 `host`、`content-length`、`transfer-encoding` |
 
