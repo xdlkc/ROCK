@@ -838,15 +838,19 @@ class SandboxProxyService:
             return {k: v for k, v in raw_headers.items() if k.lower() not in EXCLUDED_HEADERS}
 
         def rewrite_location(location: str) -> str:
-            """Rewrite upstream Location header to include proxy prefix."""
+            """Rewrite upstream Location header to include proxy prefix.
+
+            Always outputs a relative path (no scheme/host) so the browser
+            inherits the correct scheme (https) from the current page.
+            """
             from urllib.parse import urlparse
             parsed = urlparse(location)
-            # Absolute URL pointing to upstream (has scheme+netloc) → strip to path only
+            # Absolute URL pointing to upstream → strip scheme+host, keep path+query
             if parsed.scheme and parsed.netloc:
                 path = parsed.path or "/"
                 qs = f"?{parsed.query}" if parsed.query else ""
                 location = f"{path}{qs}"
-            # Now prepend proxy prefix (location is relative like /?foo=bar)
+            # proxy_prefix is always a path (e.g. /sandboxes/sb1/proxy/port/8006)
             return f"{proxy_prefix.rstrip('/')}{location}"
 
         status_list = await self.get_service_status(sandbox_id)
