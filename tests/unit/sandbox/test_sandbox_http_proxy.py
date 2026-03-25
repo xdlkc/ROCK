@@ -106,7 +106,7 @@ async def test_post_proxy(sandbox_manager: SandboxManager, sandbox_proxy_service
         mock_headers = Headers({"content-type": "application/json"})
 
         # Test with path and body
-        result = await sandbox_proxy_service.post_proxy(
+        result = await sandbox_proxy_service.http_proxy(
             sandbox_id=sandbox_id,
             target_path="api/test",
             body={"hello": "world"},
@@ -118,7 +118,7 @@ async def test_post_proxy(sandbox_manager: SandboxManager, sandbox_proxy_service
         assert response_body["echo"] == {"hello": "world"}
 
         # Test without path
-        result = await sandbox_proxy_service.post_proxy(
+        result = await sandbox_proxy_service.http_proxy(
             sandbox_id=sandbox_id,
             target_path="",
             body={"key": "value"},
@@ -129,7 +129,7 @@ async def test_post_proxy(sandbox_manager: SandboxManager, sandbox_proxy_service
         assert response_body["echo"] == {"key": "value"}
 
         # Test with body as None
-        result = await sandbox_proxy_service.post_proxy(
+        result = await sandbox_proxy_service.http_proxy(
             sandbox_id=sandbox_id,
             target_path="health",
             body=None,
@@ -141,7 +141,7 @@ async def test_post_proxy(sandbox_manager: SandboxManager, sandbox_proxy_service
         assert response_body["path"] == "/health"
 
         # Test SSE streaming response
-        result = await sandbox_proxy_service.post_proxy(
+        result = await sandbox_proxy_service.http_proxy(
             sandbox_id=sandbox_id,
             target_path="stream",
             body={"msg": "hello"},
