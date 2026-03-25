@@ -114,6 +114,27 @@ class TestHttpProxyAllMethods:
         body = call.args[2] if len(call.args) > 2 else call.kwargs.get("body")
         assert body is None
 
+    async def test_port_param_is_passed_to_service(self, app):
+        """When port=9000 is given, service.http_proxy should receive port=9000."""
+        a, svc = app
+        async with AsyncClient(transport=ASGITransport(app=a), base_url="http://test") as client:
+            await client.get("/sandboxes/sb1/proxy/status?port=9000")
+
+        svc.http_proxy.assert_called_once()
+        call = svc.http_proxy.call_args
+        port = call.kwargs.get("port") or (call.args[5] if len(call.args) > 5 else None)
+        assert port == 9000
+
+    async def test_port_defaults_to_none_when_not_given(self, app):
+        """When port is not specified, service.http_proxy should receive port=None."""
+        a, svc = app
+        async with AsyncClient(transport=ASGITransport(app=a), base_url="http://test") as client:
+            await client.get("/sandboxes/sb1/proxy/status")
+
+        call = svc.http_proxy.call_args
+        port = call.kwargs.get("port") or (call.args[5] if len(call.args) > 5 else None)
+        assert port is None
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # WebSocket Proxy — port parameter
@@ -316,6 +337,113 @@ class TestHttpProxyServiceMethod:
                 )
 
         assert sent_method["method"] == "POST"
+
+    async def test_http_proxy_uses_provided_port(self):
+        """http_proxy should build target URL with the given port."""
+        from rock.deployments.status import ServiceStatus
+        from rock.sandbox.service.sandbox_proxy_service import SandboxProxyService
+
+        service = MagicMock(spec=SandboxProxyService)
+        service._update_expire_time = AsyncMock()
+        service.get_service_status = AsyncMock(return_value=[{"host_ip": "10.0.0.1"}])
+
+        mock_status = MagicMock(spec=ServiceStatus)
+        mock_status.get_mapped_port.return_value = 8080
+
+        mock_response = MagicMock()
+        mock_response.headers = {"content-type": "application/json"}
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_response.aread = AsyncMock(return_value=b"{}")
+        mock_response.aclose = AsyncMock()
+
+        built_url = {}
+
+        class FakeClient:
+            def build_request(self, method, url, **kwargs):
+                built_url["url"] = url
+                return MagicMock()
+
+            async def send(self, req, stream=False):
+                return mock_response
+
+            async def aclose(self):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *args):
+                pass
+
+        with patch("rock.sandbox.service.sandbox_proxy_service.ServiceStatus") as MockSS:
+            MockSS.from_dict.return_value = mock_status
+            with patch("rock.sandbox.service.sandbox_proxy_service.httpx.AsyncClient", return_value=FakeClient()):
+                await SandboxProxyService.http_proxy(
+                    service,
+                    sandbox_id="sb1",
+                    target_path="api/test",
+                    body=None,
+                    headers=Headers({}),
+                    port=9000,
+                )
+
+        assert "9000" in built_url["url"]
+        # Should NOT use mapped port when port is explicitly provided
+        mock_status.get_mapped_port.assert_not_called()
+
+    async def test_http_proxy_uses_mapped_port_when_none(self):
+        """http_proxy without port should use the mapped SERVER port."""
+        from rock.deployments.constants import Port
+        from rock.deployments.status import ServiceStatus
+        from rock.sandbox.service.sandbox_proxy_service import SandboxProxyService
+
+        service = MagicMock(spec=SandboxProxyService)
+        service._update_expire_time = AsyncMock()
+        service.get_service_status = AsyncMock(return_value=[{"host_ip": "10.0.0.1"}])
+
+        mock_status = MagicMock(spec=ServiceStatus)
+        mock_status.get_mapped_port.return_value = 32000
+
+        mock_response = MagicMock()
+        mock_response.headers = {"content-type": "application/json"}
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_response.aread = AsyncMock(return_value=b"{}")
+        mock_response.aclose = AsyncMock()
+
+        built_url = {}
+
+        class FakeClient:
+            def build_request(self, method, url, **kwargs):
+                built_url["url"] = url
+                return MagicMock()
+
+            async def send(self, req, stream=False):
+                return mock_response
+
+            async def aclose(self):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *args):
+                pass
+
+        with patch("rock.sandbox.service.sandbox_proxy_service.ServiceStatus") as MockSS:
+            MockSS.from_dict.return_value = mock_status
+            with patch("rock.sandbox.service.sandbox_proxy_service.httpx.AsyncClient", return_value=FakeClient()):
+                await SandboxProxyService.http_proxy(
+                    service,
+                    sandbox_id="sb1",
+                    target_path="",
+                    body=None,
+                    headers=Headers({}),
+                )
+
+        assert "32000" in built_url["url"]
+        mock_status.get_mapped_port.assert_called_once_with(Port.SERVER)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

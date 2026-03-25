@@ -202,6 +202,7 @@ async def http_proxy(
     sandbox_id: str,
     request: Request,
     path: str = "",
+    port: int | None = Query(None),
 ):
     body = None
     if request.method not in ("GET", "HEAD", "DELETE", "OPTIONS"):
@@ -209,7 +210,9 @@ async def http_proxy(
             body = await request.json()
         except Exception:
             body = None
-    return await sandbox_proxy_service.http_proxy(sandbox_id, path, body, request.headers, method=request.method)
+    return await sandbox_proxy_service.http_proxy(
+        sandbox_id, path, body, request.headers, method=request.method, port=port
+    )
 
 
 @sandbox_proxy_router.post("/host/proxy/{path:path}")

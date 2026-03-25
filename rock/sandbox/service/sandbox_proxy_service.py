@@ -826,6 +826,7 @@ class SandboxProxyService:
         body: dict | None,
         headers: Headers,
         method: str = "POST",
+        port: int | None = None,
     ) -> JSONResponse | StreamingResponse | Response:
         """HTTP proxy that supports all methods and streaming (SSE) responses."""
         await self._update_expire_time(sandbox_id)
@@ -836,10 +837,11 @@ class SandboxProxyService:
             return {k: v for k, v in raw_headers.items() if k.lower() not in EXCLUDED_HEADERS}
 
         status_list = await self.get_service_status(sandbox_id)
-        service_status = ServiceStatus.from_dict(status_list[0])
 
         host_ip = status_list[0].get("host_ip")
-        port = service_status.get_mapped_port(Port.SERVER)
+        if port is None:
+            service_status = ServiceStatus.from_dict(status_list[0])
+            port = service_status.get_mapped_port(Port.SERVER)
         target_url = f"http://{host_ip}:{port}/{target_path}"
 
         request_headers = filter_headers(headers)
