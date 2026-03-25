@@ -5,11 +5,12 @@
 ROCK Admin 目前提供两类代理能力：
 
 1. **WebSocket Proxy** (`/sandboxes/{id}/proxy/ws[/{path}]`)：将 WebSocket 连接转发到沙箱内的固定 SERVER 端口（`Port.SERVER = 8080`），不支持用户指定目标端口。
-2. **HTTP Proxy** (`/sandboxes/{sandbox_id}/proxy[/{path}]`)：将 HTTP 请求转发到沙箱内的 SERVER 端口，但硬编码为 `method="POST"`，不支持 GET / PUT / DELETE / PATCH 等其他 HTTP 方法。
+2. **HTTP Proxy** (`/sandboxes/{sandbox_id}/proxy[/{path}]`)：将 HTTP 请求转发到沙箱内的固定 SERVER 端口（`Port.SERVER = 8080`），且硬编码为 `method="POST"`，不支持 GET / PUT / DELETE / PATCH 等其他 HTTP 方法，也不支持用户指定目标端口。
 
-这两个限制阻碍了以下场景：
+这三个限制阻碍了以下场景：
 - 沙箱内运行了多个 WebSocket 服务（如 Jupyter Kernel、VS Code Server、自定义推理服务），需要连接到不同端口
 - 沙箱内服务使用 RESTful 风格 API，需要 GET 查询、PUT 更新、DELETE 删除
+- 沙箱内运行了多个 HTTP 服务，需要访问非 8080 端口
 
 ---
 
@@ -27,6 +28,10 @@ ROCK Admin 目前提供两类代理能力：
    - API 路径从 `POST /sandboxes/{sandbox_id}/proxy[/{path}]` 改为 `ANY /sandboxes/{sandbox_id}/proxy[/{path}]`
    - 对于 GET/DELETE 等无 body 的请求，body 参数为可选
    - 保持 SSE streaming 支持
+
+3. **HTTP Proxy 支持用户指定目标端口**
+   - 在现有 `/sandboxes/{sandbox_id}/proxy[/{path}]` 路由上，允许通过 query param `port` 指定目标 HTTP 端口
+   - 当 `port` 未指定时，保持现有行为（使用 `Port.SERVER = 8080`）
 
 ### Out（本次不做的）
 
@@ -46,6 +51,8 @@ ROCK Admin 目前提供两类代理能力：
 - **AC5**：`DELETE /sandboxes/{sandbox_id}/proxy/items/1` 能成功代理 DELETE 请求
 - **AC6**：原有 `POST /sandboxes/{sandbox_id}/proxy` 行为不变（向后兼容）
 - **AC7**：SSE streaming（`text/event-stream`）在所有 method 下仍然正常工作
+- **AC8**：`GET /sandboxes/{sandbox_id}/proxy/api/health?port=9000` 能成功代理到沙箱内 9000 端口的 HTTP 服务
+- **AC9**：HTTP proxy 不带 `port` 参数时行为不变（向后兼容）
 
 ---
 
