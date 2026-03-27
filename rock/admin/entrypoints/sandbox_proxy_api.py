@@ -187,6 +187,47 @@ async def get_token():
 
 
 @sandbox_proxy_router.api_route(
+    "/sandboxes/{sandbox_id}/proxy/vnc",
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+)
+@sandbox_proxy_router.api_route(
+    "/sandboxes/{sandbox_id}/proxy/vnc/{path:path}",
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+)
+@handle_exceptions(error_message="vnc http proxy failed")
+async def vnc_http_proxy(
+    sandbox_id: str,
+    request: Request,
+    path: str = "",
+):
+    body = None
+    if request.method not in ("GET", "HEAD", "DELETE", "OPTIONS"):
+        try:
+            body = await request.json()
+        except Exception:
+            body = None
+    return await sandbox_proxy_service.http_proxy(
+        sandbox_id, path, body, request.headers, method=request.method, port=8006
+    )
+
+
+@sandbox_proxy_router.websocket("/sandboxes/{sandbox_id}/proxy/vnc/{path:path}")
+async def vnc_websocket_proxy(
+    websocket: WebSocket,
+    sandbox_id: str,
+    path: str = "",
+):
+    logger.info(f"Client connected to VNC WebSocket proxy: {sandbox_id}, path: {path}")
+    try:
+        await sandbox_proxy_service.websocket_proxy(websocket, sandbox_id, path, port=8006)
+    except WebSocketDisconnect:
+        logger.info(f"Client disconnected from VNC WebSocket proxy: {sandbox_id}")
+    except Exception as e:
+        logger.error(f"VNC WebSocket proxy error: {e}")
+        await websocket.close(code=1011, reason=f"Proxy error: {str(e)}")
+
+
+@sandbox_proxy_router.api_route(
     "/sandboxes/{sandbox_id}/proxy",
     methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
 )
