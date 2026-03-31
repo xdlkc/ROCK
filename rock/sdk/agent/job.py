@@ -152,6 +152,7 @@ class Job:
 
     async def _prepare_and_start(self):
         """Upload files + harbor config YAML + render run script -> nohup start."""
+        await self._autofill_sandbox_info()
         await self._create_session()
 
         # 1. Upload user-specified files/dirs
@@ -252,6 +253,9 @@ class Job:
     # ------------------------------------------------------------------
     # Private: utilities
     # ------------------------------------------------------------------
+
+    async def _autofill_sandbox_info(self) -> None:
+        self._config.namespace = self._sandbox._namespace
 
     async def _upload_content(self, content: str, sandbox_path: str) -> None:
         """Write text content to a local temp file and upload to sandbox via upload_by_path."""

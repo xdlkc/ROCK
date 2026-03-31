@@ -20,6 +20,21 @@ class AgentConfig(BaseModel):
     env: dict[str, str] = Field(default_factory=dict)
 
 
+class OssMirrorConfig(BaseModel):
+    """OSS artifact mirror configuration (credentials and bucket only).
+
+    ``namespace`` / ``experiment_id`` belong on :class:`~rock.sdk.agent.models.job.config.JobConfig`
+    as top-level Harbor fields, not inside ``oss_mirror``.
+    """
+
+    enabled: bool = False
+    oss_bucket: str | None = None
+    oss_access_key_id: str | None = None
+    oss_access_key_secret: str | None = None
+    oss_region: str | None = None
+    oss_endpoint: str | None = None
+
+
 class EnvironmentConfig(BaseModel):
     type: EnvironmentType | None = None
     import_path: str | None = None
@@ -31,6 +46,7 @@ class EnvironmentConfig(BaseModel):
     override_gpus: int | None = None
     suppress_override_warnings: bool = False
     mounts_json: list[dict[str, Any]] | None = None
+    oss_mirror: OssMirrorConfig | None = None
     env: dict[str, str] = Field(default_factory=dict)
     kwargs: dict[str, Any] = Field(default_factory=dict)
 

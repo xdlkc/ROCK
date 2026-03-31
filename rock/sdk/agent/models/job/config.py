@@ -17,6 +17,8 @@ from rock.sdk.agent.models.orchestrator_type import OrchestratorType
 from rock.sdk.agent.models.trial.config import (
     AgentConfig,
     ArtifactConfig,
+    EnvironmentConfig,
+    OssMirrorConfig,
     RockEnvironmentConfig,
     TaskConfig,
     VerifierConfig,
@@ -138,6 +140,18 @@ class JobConfig(BaseModel):
     environment: RockEnvironmentConfig = Field(default_factory=RockEnvironmentConfig)
 
     # ── Harbor native fields ──
+    namespace: str | None = Field(
+        default=None,
+        description="资源租户隔离标识，用于区分不同团队/项目的资源",
+    )
+    experiment_id: str | None = Field(
+        default=None,
+        description="实验标识",
+    )
+    step: str | None = Field(
+        default=None,
+        description="step 标识",
+    )
     job_name: str = Field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d__%H-%M-%S"))
     jobs_dir: Path = Path(USER_DEFINED_LOGS) / "jobs"
     n_attempts: int = 1
@@ -177,3 +191,26 @@ class JobConfig(BaseModel):
         with open(path) as f:
             data = yaml.safe_load(f)
         return cls(**data)
+
+    def enable_oss_mirror(
+        self,
+        *,
+        oss_bucket: str,
+        oss_access_key_id: str,
+        oss_access_key_secret: str,
+        oss_region: str,
+        oss_endpoint: str,
+    ) -> None:
+        """Enable OSS artifact mirror on the environment config (credentials only).
+
+        Set top-level ``namespace`` / ``experiment_id`` on ``JobConfig`` separately,
+        or rely on ``Job`` autofill from the sandbox (see ``_autofill_sandbox_info``).
+        """
+        self.environment.oss_mirror = OssMirrorConfig(
+            enabled=True,
+            oss_bucket=oss_bucket,
+            oss_access_key_id=oss_access_key_id,
+            oss_access_key_secret=oss_access_key_secret,
+            oss_region=oss_region,
+            oss_endpoint=oss_endpoint,
+        )

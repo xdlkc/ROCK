@@ -12,6 +12,8 @@ from rock.sdk.agent.models.orchestrator_type import OrchestratorType
 from rock.sdk.agent.models.trial.config import (
     AgentConfig,
     ArtifactConfig,
+    EnvironmentConfig,
+    OssMirrorConfig,
     TaskConfig,
     VerifierConfig,
 )
@@ -22,6 +24,8 @@ __all__ = [
     "RetryConfig",
     "DatasetConfig",
     "AgentConfig",
+    "EnvironmentConfig",
+    "OssMirrorConfig",
     "RockEnvironmentConfig",
     "VerifierConfig",
     "TaskConfig",

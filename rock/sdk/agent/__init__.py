@@ -14,6 +14,8 @@ from rock.sdk.agent.models.metric.config import MetricConfig
 from rock.sdk.agent.models.trial.config import (
     AgentConfig,
     ArtifactConfig,
+    EnvironmentConfig,
+    OssMirrorConfig,
     TaskConfig,
     VerifierConfig,
 )
@@ -43,6 +45,8 @@ __all__ = [
     "OrchestratorConfig",
     "RetryConfig",
     "AgentConfig",
+    "EnvironmentConfig",
+    "OssMirrorConfig",
     "VerifierConfig",
     "TaskConfig",
     "ArtifactConfig",

@@ -75,6 +75,8 @@ class Sandbox(AbstractSandbox):
     _host_ip: str | None = None
     _oss_bucket: oss2.Bucket | None = None
     _cluster: str | None = None
+    _namespace: str | None = None
+    _experiment_id: str | None = None
     agent: RockAgent | None = None
     model_service: ModelService | None = None
     remote_user: RemoteUser | None = None
@@ -193,10 +195,14 @@ class Sandbox(AbstractSandbox):
         self._sandbox_id = response.get("result").get("sandbox_id")
         self._host_name = response.get("result").get("host_name")
         self._host_ip = response.get("result").get("host_ip")
-
+        
         start_time = time.time()
         while time.time() - start_time < self.config.startup_timeout:
             sandbox_info = await self.get_status()
+            if sandbox_info.namespace is not None:
+                self._namespace = sandbox_info.namespace
+            if sandbox_info.experiment_id is not None:
+                self._experiment_id = sandbox_info.experiment_id
             logging.debug(f"Get status response: {sandbox_info}")
             if sandbox_info.is_alive:
                 return
