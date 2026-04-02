@@ -141,10 +141,11 @@ class JobConfig(BaseModel):
     # ── Harbor native fields ──
     namespace: str | None = Field(
         default=None,
-        description="Tenant isolation identifier for distinguishing resources across teams/projects",
+        description="Resource tenant isolation identifier for distinguishing resources across teams/projects",
     )
-    experiment_id: str = Field(
-        description="Experiment identifier, required",
+    experiment_id: str | None = Field(
+        default=None,
+        description="Experiment identifier",
     )
     job_name: str = Field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d__%H-%M-%S"))
     jobs_dir: Path = Path(USER_DEFINED_LOGS) / "jobs"
@@ -162,6 +163,13 @@ class JobConfig(BaseModel):
     datasets: list[LocalDatasetConfig | RegistryDatasetConfig] = Field(default_factory=list)
     tasks: list[TaskConfig] = Field(default_factory=list)
     artifacts: list[str | ArtifactConfig] = Field(default_factory=list)
+    labels: dict[str, str] = Field(
+        default_factory=dict,
+        description="Key-value labels for organizing and filtering jobs. "
+        "Example: {'step': '42', 'env': 'prod'}. "
+        "Keys: [prefix/]name, lowercase, max 63 chars. "
+        "Values: max 255 chars. Reserved prefix: 'harbor.io/'.",
+    )
 
     @model_validator(mode="after")
     def _sync_experiment_id(self):

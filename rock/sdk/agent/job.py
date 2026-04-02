@@ -258,6 +258,7 @@ class Job:
         return JobResult(
             job_id=self._config.job_name,
             status=JobStatus.COMPLETED if trial_results else JobStatus.FAILED,
+            labels=self._config.labels,
             trial_results=trial_results,
         )
 

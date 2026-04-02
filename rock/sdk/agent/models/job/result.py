@@ -22,6 +22,7 @@ class JobResult(BaseModel):
 
     job_id: str = ""
     status: JobStatus = JobStatus.COMPLETED
+    labels: dict[str, str] = Field(default_factory=dict)
     trial_results: list[TrialResult] = Field(default_factory=list)
     raw_output: str = ""
     exit_code: int = 0

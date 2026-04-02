@@ -152,6 +152,23 @@ class TestJobConfigToHarborYaml:
 
         assert "agent_timeout_multiplier" not in data
 
+    def test_labels_serialized(self):
+        cfg = JobConfig(
+            job_name="labeled-job",
+            labels={"step": "42", "env": "prod"},
+        )
+        yaml_str = cfg.to_harbor_yaml()
+        data = yaml.safe_load(yaml_str)
+
+        assert data["labels"] == {"step": "42", "env": "prod"}
+
+    def test_empty_labels_not_excluded(self):
+        cfg = JobConfig(job_name="no-labels")
+        yaml_str = cfg.to_harbor_yaml()
+        data = yaml.safe_load(yaml_str)
+
+        assert data["labels"] == {}
+
     def test_path_fields_serialized_as_strings(self):
         cfg = JobConfig(
             experiment_id="test-exp",
@@ -277,3 +294,18 @@ datasets:
         assert cfg.job_name == "local-dataset-job"
         assert isinstance(cfg.datasets[0], LocalDatasetConfig)
         assert cfg.datasets[0].path == Path("/data/tasks")
+
+    def test_from_yaml_with_labels(self, tmp_path):
+        yaml_content = """
+job_name: labeled-job
+labels:
+  step: "42"
+  env: prod
+agents:
+  - name: terminus-2
+"""
+        yaml_file = tmp_path / "config.yaml"
+        yaml_file.write_text(yaml_content)
+
+        cfg = JobConfig.from_yaml(str(yaml_file))
+        assert cfg.labels == {"step": "42", "env": "prod"}

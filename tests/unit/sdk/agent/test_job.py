@@ -101,6 +101,20 @@ class TestJobResult:
         assert r.n_completed == 0
         assert r.n_failed == 0
 
+    def test_labels_default_empty(self):
+        r = JobResult(job_id="job-no-labels")
+        assert r.labels == {}
+
+    def test_labels_preserved(self):
+        r = JobResult(
+            job_id="job-labeled",
+            labels={"step": "42", "env": "prod"},
+            trial_results=[
+                TrialResult(task_name="t1", verifier_result=VerifierResult(rewards={"reward": 1.0})),
+            ],
+        )
+        assert r.labels == {"step": "42", "env": "prod"}
+
 
 def _make_mock_sandbox():
     """Create a mock Sandbox with all required async methods."""
