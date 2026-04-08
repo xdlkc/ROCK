@@ -155,6 +155,7 @@ class TestJobConfigToHarborYaml:
     def test_labels_serialized(self):
         cfg = JobConfig(
             job_name="labeled-job",
+            experiment_id="test-exp",
             labels={"step": "42", "env": "prod"},
         )
         yaml_str = cfg.to_harbor_yaml()
@@ -163,7 +164,7 @@ class TestJobConfigToHarborYaml:
         assert data["labels"] == {"step": "42", "env": "prod"}
 
     def test_empty_labels_not_excluded(self):
-        cfg = JobConfig(job_name="no-labels")
+        cfg = JobConfig(job_name="no-labels", experiment_id="test-exp")
         yaml_str = cfg.to_harbor_yaml()
         data = yaml.safe_load(yaml_str)
 
@@ -298,6 +299,7 @@ datasets:
     def test_from_yaml_with_labels(self, tmp_path):
         yaml_content = """
 job_name: labeled-job
+experiment_id: test-exp
 labels:
   step: "42"
   env: prod

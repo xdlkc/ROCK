@@ -276,6 +276,10 @@ class Job:
         if sandbox_ns is not None:
             self._config.namespace = sandbox_ns
 
+        sandbox_exp = self._sandbox._experiment_id
+        if sandbox_exp is not None:
+            self._config.environment.experiment_id = sandbox_exp
+
     async def _upload_content(self, content: str, sandbox_path: str) -> None:
         """Write text content to a local temp file and upload to sandbox via upload_by_path."""
         local_tmp = None
