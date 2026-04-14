@@ -1,5 +1,5 @@
-from rock.sdk.agent.job import Job
-from rock.sdk.agent.models.job.config import (
+from rock.sdk.bench.job import Job
+from rock.sdk.bench.models.job.config import (
     JobConfig,
     LocalDatasetConfig,
     OrchestratorConfig,
@@ -7,25 +7,25 @@ from rock.sdk.agent.models.job.config import (
     RegistryDatasetConfig,
     RemoteRegistryInfo,
     RetryConfig,
-    RockEnvironmentConfig,
 )
-from rock.sdk.agent.models.job.result import JobResult, JobStatus
-from rock.sdk.agent.models.metric.config import MetricConfig
-from rock.sdk.agent.models.trial.config import (
+from rock.sdk.bench.models.metric.config import MetricConfig
+from rock.sdk.bench.models.trial.config import (
     AgentConfig,
     ArtifactConfig,
     EnvironmentConfig,
     OssMirrorConfig,
+    RockEnvironmentConfig,
     TaskConfig,
     VerifierConfig,
 )
-from rock.sdk.agent.models.trial.result import (
+from rock.sdk.bench.models.trial.result import (
     AgentInfo,
     AgentResult,
     ExceptionInfo,
     TrialResult,
     VerifierResult,
 )
+from rock.sdk.job.result import JobResult, JobStatus
 
 __all__ = [
     "Job",
@@ -52,3 +52,8 @@ __all__ = [
     "ArtifactConfig",
     "MetricConfig",
 ]
+
+# Register HarborTrial with the job trial registry at the end of bench init.
+# Must run AFTER bench.models.trial.result is fully loaded, so it lives here
+# (not in rock.sdk.job.__init__, which may be triggered mid-bench-load).
+import rock.sdk.job.trial.harbor  # noqa: F401, E402  # isort: skip

@@ -14,9 +14,9 @@ import uuid
 
 from rock.actions import Command, CreateBashSessionRequest, ReadFileRequest
 from rock.logger import init_logger
-from rock.sdk.agent.constants import CHECK_INTERVAL, DEFAULT_WAIT_TIMEOUT, USER_DEFINED_LOGS
-from rock.sdk.agent.models.job.result import JobResult, JobStatus
-from rock.sdk.agent.models.trial.result import TrialResult
+from rock.sdk.bench.constants import CHECK_INTERVAL, DEFAULT_WAIT_TIMEOUT, USER_DEFINED_LOGS
+from rock.sdk.bench.models.trial.result import TrialResult
+from rock.sdk.job.result import JobResult, JobStatus
 
 logger = init_logger(__name__)
 
@@ -63,7 +63,7 @@ class Job:
     """
 
     def __init__(self, config):
-        from rock.sdk.agent.models.job.config import JobConfig
+        from rock.sdk.bench.models.job.config import JobConfig
 
         if not isinstance(config, JobConfig):
             raise TypeError(f"config must be JobConfig, got {type(config)}")

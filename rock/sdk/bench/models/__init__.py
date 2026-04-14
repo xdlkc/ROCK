@@ -1,19 +1,19 @@
-from rock.sdk.agent.models.environment_type import EnvironmentType
-from rock.sdk.agent.models.job.config import (
+from rock.sdk.bench.models.environment_type import EnvironmentType
+from rock.sdk.bench.models.job.config import (
     DatasetConfig,
     JobConfig,
     OrchestratorConfig,
     RetryConfig,
-    RockEnvironmentConfig,
 )
-from rock.sdk.agent.models.metric.config import MetricConfig
-from rock.sdk.agent.models.metric.type import MetricType
-from rock.sdk.agent.models.orchestrator_type import OrchestratorType
-from rock.sdk.agent.models.trial.config import (
+from rock.sdk.bench.models.metric.config import MetricConfig
+from rock.sdk.bench.models.metric.type import MetricType
+from rock.sdk.bench.models.orchestrator_type import OrchestratorType
+from rock.sdk.bench.models.trial.config import (
     AgentConfig,
     ArtifactConfig,
     EnvironmentConfig,
     OssMirrorConfig,
+    RockEnvironmentConfig,
     TaskConfig,
     VerifierConfig,
 )
