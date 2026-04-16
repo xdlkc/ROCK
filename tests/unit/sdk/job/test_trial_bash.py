@@ -6,7 +6,10 @@ import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from rock.sdk.envhub import EnvironmentConfig
+from rock.sdk.envhub.config import OssMirrorConfig
 from rock.sdk.job.config import BashJobConfig
 from rock.sdk.job.trial.bash import BashTrial
 from rock.sdk.job.trial.registry import _create_trial
@@ -151,8 +154,6 @@ class TestBashTrialOnSandboxReady:
         assert cfg.experiment_id == "claw-eval"
 
     async def test_namespace_mismatch_raises(self):
-        import pytest
-
         cfg = BashJobConfig(script="echo hi", namespace="cfg-ns")
         trial = BashTrial(cfg)
         sandbox = MagicMock()
@@ -161,3 +162,96 @@ class TestBashTrialOnSandboxReady:
 
         with pytest.raises(ValueError, match="namespace mismatch"):
             await trial.on_sandbox_ready(sandbox)
+
+
+# ---------------------------------------------------------------------------
+# OSS mirror integration
+# ---------------------------------------------------------------------------
+
+
+def _oss_sandbox(ns="ns", exp="exp"):
+    """Minimal sandbox mock with oss_mirror support."""
+    sb = AsyncMock()
+    sb._namespace = ns
+    sb._experiment_id = exp
+    sb.arun = AsyncMock(return_value=MagicMock(exit_code=0, output=""))
+    sb.fs.ensure_ossutil = AsyncMock(return_value=True)
+    sb.fs.upload_dir = AsyncMock(return_value=MagicMock(exit_code=0))
+    return sb
+
+
+_MIRROR = OssMirrorConfig(enabled=True, oss_bucket="b", oss_endpoint="ep", oss_region="rg")
+
+
+class TestBashTrialOssMirror:
+    async def test_setup_installs_ossutil_and_creates_dir(self):
+        cfg = BashJobConfig(
+            script="echo",
+            job_name="j",
+            namespace="ns",
+            experiment_id="exp",
+            environment=EnvironmentConfig(oss_mirror=_MIRROR),
+        )
+        trial = BashTrial(cfg)
+        sb = _oss_sandbox()
+        await trial.setup(sb)
+
+        sb.fs.ensure_ossutil.assert_called_once()
+        # Initial upload to create OSS path before script runs
+        setup_cp_calls = [c for c in sb.arun.call_args_list if "ossutil cp" in str(c)]
+        assert len(setup_cp_calls) == 1
+
+    async def test_setup_skips_when_no_mirror(self):
+        trial = BashTrial(BashJobConfig(script="echo"))
+        sb = _oss_sandbox()
+        await trial.setup(sb)
+        sb.fs.ensure_ossutil.assert_not_called()
+
+    async def test_collect_uploads(self):
+        cfg = BashJobConfig(
+            script="echo",
+            job_name="j",
+            namespace="ns",
+            experiment_id="exp",
+            environment=EnvironmentConfig(oss_mirror=_MIRROR),
+        )
+        trial = BashTrial(cfg)
+        sb = _oss_sandbox()
+        await trial.setup(sb)
+        await trial.collect(sb, "ok", 0)
+
+        # setup + collect each call ossutil cp once
+        arun_calls = [c for c in sb.arun.call_args_list if "ossutil cp" in str(c)]
+        assert len(arun_calls) == 2
+        assert all("oss://b/artifacts/ns/exp/j/" in str(c) for c in arun_calls)
+
+    async def test_upload_failure_does_not_fail_job(self):
+        cfg = BashJobConfig(
+            script="echo",
+            job_name="j",
+            namespace="ns",
+            experiment_id="exp",
+            environment=EnvironmentConfig(oss_mirror=_MIRROR),
+        )
+        trial = BashTrial(cfg)
+        sb = _oss_sandbox()
+        sb.arun = AsyncMock(return_value=MagicMock(exit_code=1, output="err"))
+        await trial.setup(sb)
+        result = await trial.collect(sb, "ok", 0)
+        assert result.exit_code == 0 and result.exception_info is None
+
+    async def test_skips_upload_when_ossutil_not_ready(self):
+        cfg = BashJobConfig(
+            script="echo",
+            job_name="j",
+            namespace="ns",
+            experiment_id="exp",
+            environment=EnvironmentConfig(oss_mirror=_MIRROR),
+        )
+        trial = BashTrial(cfg)
+        sb = _oss_sandbox()
+        sb.fs.ensure_ossutil = AsyncMock(return_value=False)
+        await trial.setup(sb)
+        await trial.collect(sb, "ok", 0)
+        ossutil_calls = [c for c in sb.arun.call_args_list if "ossutil cp" in str(c)]
+        assert len(ossutil_calls) == 0
