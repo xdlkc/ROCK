@@ -36,3 +36,19 @@ def test_start_sandbox_service_passes_replay_file():
     idx = argv.index("--replay-file")
     assert argv[idx + 1] == "/tmp/in.jsonl"
     assert "--recording-file" not in argv
+
+
+def test_start_sandbox_service_passes_uts_options():
+    argv = _captured_argv(
+        model_service_type="proxy",
+        uts_recording_dir="/tmp/uts",
+        uts_source="rock-test",
+        uts_channel="collect",
+        uts_trace_id="job-1",
+        uts_session_id="exp-1",
+    )
+    assert argv[argv.index("--uts-recording-dir") + 1] == "/tmp/uts"
+    assert argv[argv.index("--uts-source") + 1] == "rock-test"
+    assert argv[argv.index("--uts-channel") + 1] == "collect"
+    assert argv[argv.index("--uts-trace-id") + 1] == "job-1"
+    assert argv[argv.index("--uts-session-id") + 1] == "exp-1"

@@ -63,6 +63,34 @@ def test_neither_flag_defaults_to_none():
     ns = parser.parse_args(["model-service", "start", "--type", "proxy"])
     assert ns.recording_file is None
     assert ns.replay_file is None
+    assert ns.uts_recording_dir is None
+
+
+def test_uts_recording_flags_parse():
+    parser = _build_parser()
+    ns = parser.parse_args(
+        [
+            "model-service",
+            "start",
+            "--type",
+            "proxy",
+            "--uts-recording-dir",
+            "/tmp/uts",
+            "--uts-source",
+            "rock-test",
+            "--uts-channel",
+            "collect",
+            "--uts-trace-id",
+            "job-1",
+            "--uts-session-id",
+            "exp-1",
+        ]
+    )
+    assert ns.uts_recording_dir == "/tmp/uts"
+    assert ns.uts_source == "rock-test"
+    assert ns.uts_channel == "collect"
+    assert ns.uts_trace_id == "job-1"
+    assert ns.uts_session_id == "exp-1"
 
 
 # ---------- handler: passes parsed args through to ModelService.start ----------
@@ -118,3 +146,33 @@ def test_start_handler_omits_both_when_unset(isolate_pid_file, fake_start):
     kwargs = fake_start.call_args.kwargs
     assert kwargs["recording_file"] is None
     assert kwargs["replay_file"] is None
+
+
+def test_start_handler_forwards_uts_options(isolate_pid_file, fake_start):
+    parser = _build_parser()
+    ns = parser.parse_args(
+        [
+            "model-service",
+            "start",
+            "--type",
+            "proxy",
+            "--uts-recording-dir",
+            "/tmp/uts",
+            "--uts-source",
+            "rock-test",
+            "--uts-channel",
+            "collect",
+            "--uts-trace-id",
+            "job-1",
+            "--uts-session-id",
+            "exp-1",
+        ]
+    )
+    asyncio.run(ModelServiceCommand().arun(ns))
+
+    kwargs = fake_start.call_args.kwargs
+    assert kwargs["uts_recording_dir"] == "/tmp/uts"
+    assert kwargs["uts_source"] == "rock-test"
+    assert kwargs["uts_channel"] == "collect"
+    assert kwargs["uts_trace_id"] == "job-1"
+    assert kwargs["uts_session_id"] == "exp-1"

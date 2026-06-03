@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rock.sdk.model.server.traj import TrajectoryRecorder
+from rock.sdk.model.server.traj import TrajectoryRecorder, UatfRecorder
 
 
 @pytest.fixture
@@ -139,3 +139,72 @@ async def test_recorder_creates_parent_directory(tmp_path, mock_monitor):
 
     assert traj_file.exists()
     assert traj_file.parent.is_dir()
+
+
+@pytest.mark.asyncio
+async def test_recorder_optionally_writes_uatf_partition(tmp_path, mock_monitor):
+    traj_file = tmp_path / "rock" / "traj.jsonl"
+    uts_root = tmp_path / "uts"
+    recorder = TrajectoryRecorder(
+        traj_file=traj_file,
+        uatf_recorder=UatfRecorder(
+            root_dir=uts_root,
+            source="rock-test",
+            scaffold="rock-proxy",
+            channel="collect",
+            trace_id="job-1",
+            session_id="exp-1",
+        ),
+    )
+
+    request = {
+        "model": "mock-model",
+        "messages": [
+            {"role": "user", "content": "hi"},
+            {"role": "assistant", "content": "calling", "tool_calls": [{"id": "call-1"}]},
+        ],
+    }
+    response = {
+        "id": "chatcmpl-1",
+        "model": "mock-model",
+        "choices": [{"message": {"role": "assistant", "content": "ok"}}],
+        "usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15},
+    }
+    await recorder.record(request=request, response=response, status="success", start_time=0.0, end_time=1.0)
+
+    uatf_file = uts_root / "19700101" / "collect.jsonl"
+    assert uatf_file.exists()
+    record = json.loads(uatf_file.read_text(encoding="utf-8").strip())
+    assert record["schema_version"] == "UATF-v1.0"
+    assert record["source"] == "rock-test"
+    assert record["trace_id"] == "job-1"
+    assert record["session_id"] == "exp-1"
+    assert record["raw_protocol"] == "openai_chat_completions"
+    assert record["raw_request"] == json.dumps(request, ensure_ascii=False, separators=(",", ":"))
+    assert json.loads(record["raw_response"])["id"] == "chatcmpl-1"
+    assert record["token_input"] == 10
+    assert record["token_output"] == 5
+    assert record["total_turns"] == 2
+    assert record["tool_calls_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_uatf_recorder_records_failure_as_valid_json_response(tmp_path, mock_monitor):
+    recorder = TrajectoryRecorder(
+        traj_file=tmp_path / "rock.jsonl",
+        uatf_recorder=UatfRecorder(root_dir=tmp_path / "uts"),
+    )
+
+    await recorder.record(
+        request={"model": "mock-model", "messages": []},
+        response=None,
+        status="failure",
+        start_time=0.0,
+        end_time=1.0,
+        error="timeout",
+    )
+
+    record = json.loads((tmp_path / "uts" / "19700101" / "collect.jsonl").read_text(encoding="utf-8").strip())
+    assert json.loads(record["raw_response"]) == {"status": "failure", "error": "timeout"}
+    assert record["cleaned_response"] is None
+    assert json.loads(record["extend_tags"])["error"] == "timeout"

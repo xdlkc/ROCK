@@ -19,6 +19,12 @@ class ModelService:
         request_timeout: int | None = None,
         recording_file: str | None = None,
         replay_file: str | None = None,
+        uts_recording_dir: str | None = None,
+        uts_source: str | None = None,
+        uts_scaffold: str | None = None,
+        uts_channel: str | None = None,
+        uts_trace_id: str | None = None,
+        uts_session_id: str | None = None,
     ) -> subprocess.Popen:
         """start sandbox service"""
         current_file = Path(__file__).resolve()
@@ -44,6 +50,18 @@ class ModelService:
             cmd.extend(["--recording-file", recording_file])
         if replay_file:
             cmd.extend(["--replay-file", replay_file])
+        if uts_recording_dir:
+            cmd.extend(["--uts-recording-dir", uts_recording_dir])
+        if uts_source:
+            cmd.extend(["--uts-source", uts_source])
+        if uts_scaffold:
+            cmd.extend(["--uts-scaffold", uts_scaffold])
+        if uts_channel:
+            cmd.extend(["--uts-channel", uts_channel])
+        if uts_trace_id:
+            cmd.extend(["--uts-trace-id", uts_trace_id])
+        if uts_session_id:
+            cmd.extend(["--uts-session-id", uts_session_id])
         process = subprocess.Popen(cmd, cwd=str(service_dir))
         return process
 
@@ -59,6 +77,12 @@ class ModelService:
         request_timeout: int | None = None,
         recording_file: str | None = None,
         replay_file: str | None = None,
+        uts_recording_dir: str | None = None,
+        uts_source: str | None = None,
+        uts_scaffold: str | None = None,
+        uts_channel: str | None = None,
+        uts_trace_id: str | None = None,
+        uts_session_id: str | None = None,
     ) -> str:
         process = self.start_sandbox_service(
             model_service_type=model_service_type,
@@ -70,6 +94,12 @@ class ModelService:
             request_timeout=request_timeout,
             recording_file=recording_file,
             replay_file=replay_file,
+            uts_recording_dir=uts_recording_dir,
+            uts_source=uts_source,
+            uts_scaffold=uts_scaffold,
+            uts_channel=uts_channel,
+            uts_trace_id=uts_trace_id,
+            uts_session_id=uts_session_id,
         )
         pid = process.pid
 

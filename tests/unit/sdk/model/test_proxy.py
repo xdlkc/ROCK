@@ -554,6 +554,10 @@ def test_config_default_recording_and_replay():
     config = ModelServiceConfig()
     assert config.recording_file is None
     assert config.replay_file is None
+    assert config.uts_recording_dir is None
+    assert config.uts_source == "rock-model-service"
+    assert config.uts_scaffold == "rock-proxy"
+    assert config.uts_channel == "collect"
 
 
 @pytest.mark.asyncio
@@ -572,6 +576,30 @@ async def test_config_loads_replay_file_from_yaml(tmp_path):
     config = ModelServiceConfig.from_file(str(conf_file))
     assert config.replay_file == "/tmp/in.jsonl"
     assert config.recording_file is None
+
+
+@pytest.mark.asyncio
+async def test_config_loads_uts_recording_from_yaml(tmp_path):
+    conf_file = tmp_path / "proxy.yml"
+    conf_file.write_text(
+        yaml.dump(
+            {
+                "uts_recording_dir": "/tmp/uts",
+                "uts_source": "rock-test",
+                "uts_scaffold": "rock-proxy",
+                "uts_channel": "collect",
+                "uts_trace_id": "job-1",
+                "uts_session_id": "exp-1",
+            }
+        )
+    )
+    config = ModelServiceConfig.from_file(str(conf_file))
+    assert config.uts_recording_dir == "/tmp/uts"
+    assert config.uts_source == "rock-test"
+    assert config.uts_scaffold == "rock-proxy"
+    assert config.uts_channel == "collect"
+    assert config.uts_trace_id == "job-1"
+    assert config.uts_session_id == "exp-1"
 
 
 def test_config_recording_and_replay_are_mutually_exclusive():
@@ -608,6 +636,12 @@ def test_cli_args_override_config_file(tmp_path):
         request_timeout=30,
         recording_file=None,
         replay_file=None,
+        uts_recording_dir=None,
+        uts_source=None,
+        uts_scaffold=None,
+        uts_channel=None,
+        uts_trace_id=None,
+        uts_session_id=None,
     )
     config = create_config_from_args(args)
     assert config.host == "0.0.0.0"
@@ -626,9 +660,43 @@ def test_cli_replay_file_enables_replay():
         request_timeout=None,
         recording_file=None,
         replay_file="/tmp/in.jsonl",
+        uts_recording_dir=None,
+        uts_source=None,
+        uts_scaffold=None,
+        uts_channel=None,
+        uts_trace_id=None,
+        uts_session_id=None,
     )
     config = create_config_from_args(args)
     assert config.replay_file == "/tmp/in.jsonl"
+
+
+def test_cli_uts_args_override_config_file(tmp_path):
+    conf_file = tmp_path / "proxy.yml"
+    conf_file.write_text(yaml.dump({"uts_recording_dir": "/tmp/from-config", "uts_source": "config-source"}))
+    args = argparse.Namespace(
+        config_file=str(conf_file),
+        host=None,
+        port=None,
+        proxy_base_url=None,
+        retryable_status_codes=None,
+        request_timeout=None,
+        recording_file=None,
+        replay_file=None,
+        uts_recording_dir="/tmp/from-cli",
+        uts_source="cli-source",
+        uts_scaffold="cli-scaffold",
+        uts_channel="purchase",
+        uts_trace_id="job-1",
+        uts_session_id="exp-1",
+    )
+    config = create_config_from_args(args)
+    assert config.uts_recording_dir == "/tmp/from-cli"
+    assert config.uts_source == "cli-source"
+    assert config.uts_scaffold == "cli-scaffold"
+    assert config.uts_channel == "purchase"
+    assert config.uts_trace_id == "job-1"
+    assert config.uts_session_id == "exp-1"
 
 
 # ---------- Metrics singleton + legacy record_traj (still used by local mode) ----------

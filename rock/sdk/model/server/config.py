@@ -63,6 +63,25 @@ class ModelServiceConfig(BaseModel):
     """Replay mode input: a .jsonl trajectory file. When set, ReplayBackend serves
     requests from recorded responses instead of calling a real upstream."""
 
+    uts_recording_dir: str | None = Field(default=None)
+    """Optional UTS/UATF recording root. When set, the proxy also writes
+    UATF records to {uts_recording_dir}/{ds}/{uts_channel}.jsonl."""
+
+    uts_source: str = Field(default="rock-model-service")
+    """UATF source field."""
+
+    uts_scaffold: str | None = Field(default="rock-proxy")
+    """UATF scaffold field."""
+
+    uts_channel: str = Field(default="collect")
+    """UATF channel partition."""
+
+    uts_trace_id: str | None = Field(default=None)
+    """UATF trace_id for correlating all LLM calls in one ROCK job/task."""
+
+    uts_session_id: str | None = Field(default=None)
+    """UATF session_id for correlating calls in one ROCK run/session."""
+
     @model_validator(mode="after")
     def _recording_replay_mutually_exclusive(self):
         if self.recording_file and self.replay_file:

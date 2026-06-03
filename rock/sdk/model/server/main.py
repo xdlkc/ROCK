@@ -71,12 +71,24 @@ def _configure_proxy_integrations(app: FastAPI, config: ModelServiceConfig) -> N
         logger.info(f"replay backend attached, replay_file={config.replay_file}")
         return
 
-    from rock.sdk.model.server.traj import TrajectoryRecorder
+    from rock.sdk.model.server.traj import TrajectoryRecorder, UatfRecorder
 
     recording_path = config.recording_file or TRAJ_FILE
-    recorder = TrajectoryRecorder(traj_file=recording_path)
+    uatf_recorder = None
+    if config.uts_recording_dir:
+        uatf_recorder = UatfRecorder(
+            root_dir=config.uts_recording_dir,
+            source=config.uts_source,
+            scaffold=config.uts_scaffold,
+            channel=config.uts_channel,
+            trace_id=config.uts_trace_id,
+            session_id=config.uts_session_id,
+        )
+    recorder = TrajectoryRecorder(traj_file=recording_path, uatf_recorder=uatf_recorder)
     app.state.backend = ForwardBackend(config, recorder=recorder)
-    logger.info(f"forward backend attached, recording_file={recording_path}")
+    logger.info(
+        f"forward backend attached, recording_file={recording_path}, uts_recording_dir={config.uts_recording_dir}"
+    )
 
 
 def main(
@@ -134,6 +146,24 @@ def create_config_from_args(args) -> ModelServiceConfig:
     if args.replay_file:
         config.replay_file = args.replay_file
         logger.info(f"replay mode enabled via --replay-file: {args.replay_file}")
+    if args.uts_recording_dir:
+        config.uts_recording_dir = args.uts_recording_dir
+        logger.info(f"uts_recording_dir set from command line: {args.uts_recording_dir}")
+    if args.uts_source:
+        config.uts_source = args.uts_source
+        logger.info(f"uts_source set from command line: {args.uts_source}")
+    if args.uts_scaffold:
+        config.uts_scaffold = args.uts_scaffold
+        logger.info(f"uts_scaffold set from command line: {args.uts_scaffold}")
+    if args.uts_channel:
+        config.uts_channel = args.uts_channel
+        logger.info(f"uts_channel set from command line: {args.uts_channel}")
+    if args.uts_trace_id:
+        config.uts_trace_id = args.uts_trace_id
+        logger.info(f"uts_trace_id set from command line: {args.uts_trace_id}")
+    if args.uts_session_id:
+        config.uts_session_id = args.uts_session_id
+        logger.info(f"uts_session_id set from command line: {args.uts_session_id}")
 
     return config
 
@@ -188,6 +218,17 @@ if __name__ == "__main__":
         default=None,
         help="Replay mode: path to a recorded .jsonl traj file. Disables real LLM upstreams.",
     )
+    parser.add_argument(
+        "--uts-recording-dir",
+        type=str,
+        default=None,
+        help="Forward mode: also write UTS/UATF records under DIR/{ds}/{channel}.jsonl.",
+    )
+    parser.add_argument("--uts-source", type=str, default=None, help="UATF source value.")
+    parser.add_argument("--uts-scaffold", type=str, default=None, help="UATF scaffold value.")
+    parser.add_argument("--uts-channel", type=str, default=None, help="UATF channel partition value.")
+    parser.add_argument("--uts-trace-id", type=str, default=None, help="UATF trace_id value.")
+    parser.add_argument("--uts-session-id", type=str, default=None, help="UATF session_id value.")
     args = parser.parse_args()
 
     config = create_config_from_args(args)

@@ -84,6 +84,12 @@ class ModelServiceCommand(Command):
                 request_timeout=args.request_timeout,
                 recording_file=args.recording_file,
                 replay_file=args.replay_file,
+                uts_recording_dir=args.uts_recording_dir,
+                uts_source=args.uts_source,
+                uts_scaffold=args.uts_scaffold,
+                uts_channel=args.uts_channel,
+                uts_trace_id=args.uts_trace_id,
+                uts_session_id=args.uts_session_id,
             )
             logger.info(f"model service started, pid: {pid}")
             with open(self.DEFAULT_MODEL_SERVICE_PID_FILE, "w") as f:
@@ -192,6 +198,17 @@ class ModelServiceCommand(Command):
             default=None,
             help="Proxy mode only: replay from a recorded .jsonl traj file. Mutually exclusive with --recording-file.",
         )
+        start_parser.add_argument(
+            "--uts-recording-dir",
+            type=str,
+            default=None,
+            help="Proxy mode only: also write UTS/UATF records under DIR/{ds}/{channel}.jsonl.",
+        )
+        start_parser.add_argument("--uts-source", type=str, default=None, help="UATF source value.")
+        start_parser.add_argument("--uts-scaffold", type=str, default=None, help="UATF scaffold value.")
+        start_parser.add_argument("--uts-channel", type=str, default=None, help="UATF channel partition value.")
+        start_parser.add_argument("--uts-trace-id", type=str, default=None, help="UATF trace_id value.")
+        start_parser.add_argument("--uts-session-id", type=str, default=None, help="UATF session_id value.")
 
         watch_agent_parser = model_service_subparsers.add_parser(
             "watch-agent",

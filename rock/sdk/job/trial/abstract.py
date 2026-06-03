@@ -70,6 +70,18 @@ class AbstractTrial(ABC):
             parts.append(f"--replay-file {shlex.quote(env_vars.ROCK_JOB_PROXY_REPLAY_FILE)}")
         elif proxy.recording_file:
             parts.append(f"--recording-file {shlex.quote(proxy.recording_file)}")
+        if proxy.uts_recording_dir:
+            parts.extend(
+                [
+                    f"--uts-recording-dir {shlex.quote(proxy.uts_recording_dir)}",
+                    f"--uts-source {shlex.quote(proxy.uts_source)}",
+                    f"--uts-channel {shlex.quote(proxy.uts_channel)}",
+                ]
+            )
+            if self._config.job_name:
+                parts.append(f"--uts-trace-id {shlex.quote(self._config.job_name)}")
+            if self._config.experiment_id:
+                parts.append(f"--uts-session-id {shlex.quote(self._config.experiment_id)}")
         return " ".join(parts)
 
     async def _detect_and_rewrite_proxy_url(self, sandbox: Sandbox) -> None:

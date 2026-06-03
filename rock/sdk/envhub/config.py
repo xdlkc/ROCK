@@ -50,6 +50,16 @@ class ProxyConfig(BaseModel):
     """Replay mode: local path. SDK uploads it to the sandbox and the proxy reads
     the in-sandbox copy. Mutually exclusive with recording_file."""
 
+    uts_recording_dir: str | None = None
+    """Optional UTS/UATF recording root inside the sandbox. When set, model-service
+    writes UATF records to {uts_recording_dir}/{ds}/{uts_channel}.jsonl."""
+
+    uts_source: str = "rock-model-service"
+    """UATF source value."""
+
+    uts_channel: str = "collect"
+    """UATF channel partition value."""
+
     host: str = "0.0.0.0"
     """Proxy listen address. 0.0.0.0 lets nested docker containers reach it via
     the docker0 gateway."""
@@ -72,6 +82,8 @@ class ProxyConfig(BaseModel):
                 "set one (recording mode) or the other (replay mode), not both."
             )
         return self
+
+
 class TrackingConfig(BaseModel):
     """Experiment tracking configuration.
 

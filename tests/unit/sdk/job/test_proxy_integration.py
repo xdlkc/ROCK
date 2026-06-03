@@ -52,6 +52,9 @@ class TestProxyConfigValidators:
         assert c.host == "0.0.0.0"
         assert c.port == 28080
         assert c.model_service_package == "rl-rock[model-service]"
+        assert c.uts_recording_dir is None
+        assert c.uts_source == "rock-model-service"
+        assert c.uts_channel == "collect"
 
 
 class TestEnvironmentConfigProxyField:
@@ -111,6 +114,25 @@ class TestBuildProxyStartCmd:
         assert "--type proxy" in cmd
         assert "--recording-file" not in cmd
         assert "--replay-file" not in cmd
+
+    def test_uts_recording_adds_uatf_flags_and_ids(self):
+        environment = EnvironmentConfig(
+            proxy=ProxyConfig(enabled=True, uts_recording_dir="/data/logs/uts", uts_source="rock-test"),
+            env={"OPENAI_BASE_URL": "https://x/v1"},
+        )
+        cfg = BashJobConfig(
+            script="echo",
+            job_name="job-1",
+            experiment_id="exp-1",
+            environment=environment,
+        )
+        trial = BashTrial(cfg)
+        cmd = trial._build_proxy_start_cmd()
+        assert "--uts-recording-dir /data/logs/uts" in cmd
+        assert "--uts-source rock-test" in cmd
+        assert "--uts-channel collect" in cmd
+        assert "--uts-trace-id job-1" in cmd
+        assert "--uts-session-id exp-1" in cmd
 
     def test_sandbox_replay_file_constant(self):
         assert env_vars.ROCK_JOB_PROXY_REPLAY_FILE == "/data/logs/user-defined/rock-job-proxy-replay.jsonl"
